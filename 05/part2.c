@@ -45,7 +45,7 @@ int compar (const void* smaller, const void* bigger){
 
 // line must be terminated by \n or by \0
 // for practical reason, returns the middle number of the correct page, 0 otherwise
-int page_valid(char* line, dep* deps, int n_deps) {
+int page_invalid(char* line, dep* deps, int n_deps) {
     int nums[MAX_PAGE_NUMS];
     int index = 0;
     char* delim = ",\n";
@@ -113,15 +113,11 @@ int main(int argc, char** argv) {
     }
     // At the end, dep num is the number of dependencies read
 
-    // for (int i = 0; i < dep_num; i++){
-    //     printf("%d | %d\n", deps[i].before, deps[i].after);
-    // }
-
     // Read the page updates and check the dependencies for each of them
     int sum = 0;
     fgets(line, sizeof(line), f);
     while (!feof(f)) {
-        sum += page_valid(line, deps, dep_num);
+        sum += page_invalid(line, deps, dep_num);
         fgets(line, sizeof(line), f);
     }
 
