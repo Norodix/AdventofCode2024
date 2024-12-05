@@ -1,3 +1,5 @@
 **/input
 **/example
 *.o
+**/part1
+**/part2
