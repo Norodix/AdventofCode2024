@@ -90,15 +90,17 @@ typedef struct {
 // Return 1 if the map is a loop, 0 otherwise
 void traverse_map(traverse_properties* tp) {
     int row = -1;
-    int col = -1; // The current row and column
+    int col = -1;  // The current row and column
     int dr  = -1;
-    int dc  =  0; // The target direction
+    int dc  =  0;  // The target direction
     int next_r;
-    int next_c; // The next row and column target
+    int next_c;    // The next row and column target
     int steps = 0; // The number of steps already taken
+    int** freq;    // Frequency tiles
     // This is the bruteforce approach,
     // smarter would be to check if the same direction and position has been visited already
     map* m = tp->m;
+
 
     for (int r = 0; r < m->rows; r++) {
         for (int c = 0; c < m->cols; c++) {
@@ -111,8 +113,14 @@ void traverse_map(traverse_properties* tp) {
     }
     // This should never run in case of a valid input
     printf("The start character could not be found\n");
-    return;
+    goto free_freq;
 start_found:
+    // Create frequency tiles
+    freq = malloc(sizeof(int*) * m->rows);
+    for (int r = 0; r < m->rows; r++) {
+        freq[r] = malloc(sizeof(int*) * m->cols);
+        memset(freq[r], 0, sizeof(int) * m->cols);
+    }
 
     // traverse the map
     next_r = row + dr;
@@ -126,21 +134,25 @@ start_found:
         if (!blocked) {
             row = next_r;
             col = next_c;
-            steps++;
+            freq[row][col]++;
+            if (freq[row][col] > 4){
+                // Found a loop
+                *(tp->sum) += 1;
+                goto free_freq;
+            }
         }
         else {
             rotate_dir(&dr, &dc);
         }
         next_r = row + dr;
         next_c = col + dc;
-        if (steps > m->rows * m->cols * 4) {
-            // there are no more possible steps to take than each direction on each cell
-            // If so many has been taken it must be a loop for sure
-            *(tp->sum) += 1;
-            return; // it is a loop
-        }
     }
-    return; // not a loop
+free_freq:
+    for (int r = 0; r < m->rows; r++) {
+        free(freq[r]);
+    }
+    free(freq);
+    return;
 }
 
 

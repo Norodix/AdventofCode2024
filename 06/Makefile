@@ -3,7 +3,7 @@ BUILDDIR = build
 # Create build directory if it doesnt exist
 $(shell mkdir -p $(BUILDDIR))
 
-CFLAGS = -O0 -g -lm
+CFLAGS = -O3 -lm
 ODIR = obj
 
 %part1: $(BUILDDIR)/part1.o
