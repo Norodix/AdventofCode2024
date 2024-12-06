@@ -4,6 +4,9 @@ part1: part1.o
 part2: part2.o
 	gcc $^ -o $@ -O3 -lm
 
+part2_thread: part2_thread.o
+	gcc $^ -o $@ -O0 -g -lm -lpthread
+
 all: part1 part2
 	gcc $^ -o part1 -O3 -lm
 
