@@ -96,7 +96,7 @@ void traverse_map(traverse_properties* tp) {
     int next_r;
     int next_c;    // The next row and column target
     int steps = 0; // The number of steps already taken
-    int** freq;    // Frequency tiles
+    int* freq;    // Frequency tiles
     // This is the bruteforce approach,
     // smarter would be to check if the same direction and position has been visited already
     map* m = tp->m;
@@ -116,11 +116,8 @@ void traverse_map(traverse_properties* tp) {
     goto free_freq;
 start_found:
     // Create frequency tiles
-    freq = malloc(sizeof(int*) * m->rows);
-    for (int r = 0; r < m->rows; r++) {
-        freq[r] = malloc(sizeof(int*) * m->cols);
-        memset(freq[r], 0, sizeof(int) * m->cols);
-    }
+    freq = malloc(sizeof(int*) * m->cols * m->rows);
+    memset(freq, 0, sizeof(int) * m->cols * m->rows);
 
     // traverse the map
     next_r = row + dr;
@@ -134,8 +131,9 @@ start_found:
         if (!blocked) {
             row = next_r;
             col = next_c;
-            freq[row][col]++;
-            if (freq[row][col] > 4){
+            int index = row * m->cols + col;
+            freq[index]++;
+            if (freq[index] > 4){
                 // Found a loop
                 *(tp->sum) += 1;
                 goto free_freq;
@@ -148,9 +146,6 @@ start_found:
         next_c = col + dc;
     }
 free_freq:
-    for (int r = 0; r < m->rows; r++) {
-        free(freq[r]);
-    }
     free(freq);
     return;
 }
