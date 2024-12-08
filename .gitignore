@@ -4,3 +4,5 @@
 **/part1
 **/part2
 **/build/*
+compile_commands.json
+**/.cache
