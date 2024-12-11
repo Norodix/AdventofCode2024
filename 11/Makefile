@@ -8,14 +8,17 @@ CFLAGS = -O0 -lm -g
 %part1: $(BUILDDIR)/part1.o
 	gcc $^ -o $@ $(CFLAGS)
 
-%part2: $(BUILDDIR)/part2.o
+%part2: part2.c hashmap.c/hashmap.o
 	gcc $^ -o $@ $(CFLAGS)
 
 _EXE = part1 part2
 EXE = $(addprefix $(BUILDDIR)/, $(_EXE))
 all: $(EXE)
 
-$(BUILDDIR)/%.o: %.c
+hashmap.c/hashmap.o: hashmap.c/hashmap.c
+	$(CC) -c -o $@ $^ $(CFLAGS)
+
+%.o: %.c
 	$(CC) -c -o $@ $^ $(CFLAGS)
 
 clean:
