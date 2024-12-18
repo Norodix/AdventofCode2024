@@ -54,9 +54,10 @@ int is_free(char c) {
 }
 
 // This should fill every node with the minimum available score
-void search_path(node** nodes, int rows, int cols, node* current_node) {
+int search_path(node** nodes, int rows, int cols, node* current_node) {
     // printf("Searching around node at (%i,%i)\n", current_node->row, current_node->col);
-    fflush(stdout);
+    // Finished, no need to search further
+    if (current_node->row == rows-1 && current_node->col == cols-1) return 1;
     int r = current_node->row;
     int c = current_node->col;
     // Check in all 4 directions
@@ -77,9 +78,11 @@ void search_path(node** nodes, int rows, int cols, node* current_node) {
         else {
             // printf("Searching at new node (%i,%i) with score %li\n", nextr, nextc, new_score);
             next_node->score = new_score;
-            search_path(nodes, rows, cols, next_node);
+            int finished = search_path(nodes, rows, cols, next_node);
+            if (finished) return 1;
         }
     }
+    return 0;
 }
 
 void reset_nodes(node** nodes, int rows, int cols) {
