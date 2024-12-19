@@ -99,6 +99,7 @@ int main(int argc, char** argv) {
         return -2;
     }
 
+    init_cache(cache, CACHE_LEN);
     memset(components, '\0', MAX_COMPONENTS * MAX_COMP_LEN);
     // uint64_t next = strtoull(rest, &cont, 10);
     // // If rest is empty, evaluate if target
