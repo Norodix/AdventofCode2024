@@ -76,8 +76,6 @@ void search_path(char** tiles, int rows, int cols, node** nodes, node* current_n
         node* next_node = &(nodes[nextr][nextc]);
         // If new score is more or the same as the stored one, ignore it
         if (new_score >= next_node->score) continue;
-        // If this is the start of a cheat, only go to the cheat end
-        if (tiles[r][c] == CHEATSTART && tiles[nextr][nextc] != CHEATEND) continue;
         // Otherwise this is the new minimum for the next node, and search from there
         // printf("Searching at new node (%i,%i) with score %li\n", nextr, nextc, new_score);
         next_node->score = new_score;
@@ -85,12 +83,21 @@ void search_path(char** tiles, int rows, int cols, node** nodes, node* current_n
     }
 }
 
-void reset_nodes(int rows, int cols, node** nodes) {
-    for (int r = 0; r < rows; r++) {
-        for (int c = 0; c < cols; c++) {
-            nodes[r][c].score = UINT64_MAX;
-        }
+uint64_t get_min_neighbor(char** tiles, int rows, int cols, node** nodes, node* current_node) {
+    uint64_t min = UINT64_MAX;
+    int r = current_node->row;
+    int c = current_node->col;
+    // Check in all 4 directions
+    for (int i = 0; i < 4; i++) {
+        int nextr = r + row_offsets[i];
+        int nextc = c + col_offsets[i];
+        if (coords_valid(rows, cols, nextr, nextc) == 0) continue;
+        // If not free, just skip it
+        if (!is_free(tiles[nextr][nextc])) continue;
+        node* next_node = &(nodes[nextr][nextc]);
+        min = MIN(next_node->score, min);
     }
+    return min;
 }
 
 int cheat_valid(char** tiles, int rows, int cols, int startr, int startc, int endr, int endc) {
@@ -203,20 +210,13 @@ int main(int argc, char** argv) {
             for (int dir = 0; dir < 4; dir++) {
                 int re = r + row_offsets[dir];
                 int ce = c + col_offsets[dir];
-                if (cheat_valid(tiles, rows, cols, r, c, re, ce) == 0)
-                    continue;
-                tiles[r][c] = CHEATSTART;
-                char end_original = tiles[re][ce];
-                tiles[re][ce] = CHEATEND;
-                reset_nodes(rows, cols, nodes);
-                startnode->score = 0;
-                search_path(tiles, rows, cols, nodes, startnode);
-                if (endnode->score <= base_score-100) {
-                    // printf("Saving %lu\n", base_score-endnode->score);
-                    sum++;
-                }
-                tiles[r][c] = WALL;
-                tiles[re][ce] = end_original;
+                if (cheat_valid(tiles, rows, cols, r, c, re, ce) == 0) continue;
+                uint64_t min_enter = get_min_neighbor(tiles, rows, cols, nodes, &nodes[r][c]);
+                if (min_enter == UINT64_MAX) continue;
+                uint64_t exit_score = nodes[re][ce].score;
+                uint64_t distance = 2;
+                if (exit_score <= min_enter) continue;
+                if ((exit_score - (min_enter + distance)) >= 100) sum++;
             }
         }
     }
