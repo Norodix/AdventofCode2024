@@ -129,42 +129,210 @@ void move_dir(char* output, char from, char to) {
     strcat(output, "A");
 }
 
-void do_all_moves(char* output, char* input) {
-    char robot1[LINELEN];
-    char robot2[LINELEN];
-    char robot3[LINELEN]; // Yourself
-    memset(robot1, '\0', LINELEN);
-    memset(robot2, '\0', LINELEN);
-    memset(robot3, '\0', LINELEN);
+#define MIN(a,b) (a < b ? a : b)
+
+#define MAXPERMS (100)
+
+void swap(char *a, char *b) { char t = *a; *a = *b; *b = t; }
+
+int permutations_stored = 0;
+char permutations[100][10];
+void permute(char *a, int i, int n) {
+    // If we are at the last letter, print it
+    if (i >= (n-1)) {
+        strcpy(permutations[permutations_stored], a);
+        permutations_stored++;
+    }
+    else {
+        // Show all the permutations with the first i-1 letters fixed and 
+        // swapping the i'th letter for each of the remaining ones.
+        for (int j = i; j < n; j++) {
+            swap((a+i), (a+j));
+            permute(a, i+1, n);
+            swap((a+i), (a+j));
+        }
+    }
+}
+
+// Expects the string to have an unaltered A at the end
+void prepare_permutations(char* a) {
+    permutations_stored = 0;
+    memset(permutations, 0, sizeof(permutations));
+    permute(a, 0, strlen(a)-1);
+}
+
+void print_permutations() {
+    for (int i = 0; i < permutations_stored; i++) {
+        printf("%s\n", permutations[i]);
+    }
+    fflush(stdout);
+}
+
+int coords_valid(int row, int col) {
+    if (row < 0 || col < 0) return 0;
+    if (row > 1 || col > 2) return 0;
+    if (row == 0 && col == 0) return 0;
+    return 1;
+}
+
+// Checks if subsequence is valid in dir
+int subsequence_valid(char start, char* sequence) {
+    int row = get_row_dir(start);
+    int col = get_col_dir(start);
+    for (int i = 0; i < strlen(sequence); i++) {
+        switch(sequence[i]) {
+            case '^':
+                row--;
+                break;
+            case '<':
+                col--;
+                break;
+            case 'v':
+                row++;
+                break;
+            case '>':
+                col++;
+                break;
+            default:
+                break;
+        }
+        if (coords_valid(row, col) == 0) return 0;
+    }
+    return 1;
+}
+
+int coords_valid_num(int row, int col) {
+    if (row < 0 || col < 0) return 0;
+    if (row > 3 || col > 2) return 0;
+    if (row == 3 && col == 0) return 0;
+    return 1;
+}
+
+// Checks if subsequence is valid in dir
+int subsequence_valid_num(char start, char* sequence) {
+    int row = get_row_num(start);
+    int col = get_col_num(start);
+    for (int i = 0; i < strlen(sequence); i++) {
+        switch(sequence[i]) {
+            case '^':
+                row--;
+                break;
+            case '<':
+                col--;
+                break;
+            case 'v':
+                row++;
+                break;
+            case '>':
+                col++;
+                break;
+            default:
+                break;
+        }
+        if (coords_valid_num(row, col) == 0) return 0;
+    }
+    return 1;
+}
+
+
+// When these sequencies ending with A are counted they 
+// produce a sequence where at the end all lower (higher?) levels end up at A
+uint64_t count_min_moves(char* sequence, int layers_left) {
+    if (strlen(sequence) == 0) return UINT64_MAX;
+    // printf("Count min moves called with sequence: %s\n", sequence);
+    if (layers_left == 0) {
+        return strlen(sequence);
+    }
+    // Otherwise, for each character in the sequence
+    // generate all permutations that take from A or the previous to that character
+    // This permutation will be a subsequence ending with A
+    // and for each permutation get and keep only the minimal count
+
+    uint64_t sum_min = 0;
+    char start = 'A';
+    for (int i = 0; i < strlen(sequence); i++){
+        uint64_t min = UINT64_MAX;
+        char base_subsequence[100];
+        char subsequence[100];
+        memset(base_subsequence, 0, sizeof(base_subsequence));
+        move_dir(base_subsequence, start, sequence[i]);
+        // printf("move dir called with from %c to %c\n", start, sequence[i]);
+        // printf("This generated %s as a base sequence\n", base_subsequence);
+        prepare_permutations(base_subsequence);
+        // printf("Permutations for this round\n");
+        // print_permutations();
+        for (int j = 0; j < permutations_stored; j++) { // for each subsequence permutation
+            strcpy(subsequence, permutations[j]); // subsequence
+            // Check if this permutation is valid
+            if (subsequence_valid(start, subsequence) == 0) continue;
+            uint64_t subcount = count_min_moves(subsequence, layers_left - 1);
+            if (subcount < min) {
+                min = subcount;
+                // printf("New minimum found for layer %i: %lu\n", layers_left, min);
+            }
+            prepare_permutations(base_subsequence); // ugly hack, i hate it
+        }
+        sum_min += min;
+        // printf("Minimum %li needed\n", sum_min);
+        start = sequence[i];
+    }
+    return sum_min;
+}
+
+uint64_t do_all_moves(char* input) {
+    // printf("\n**************************************\n\n");
+    uint64_t moves = 0;
     // Transform the main code to 1st robots instructions
     char start = 'A';
-    for (int i = 0; i < strlen(input); i++){
-        move_numpad(robot1, start, input[i]);
+    for (int i = 0; i < strlen(input) - 1; i++){
+        uint64_t min = UINT64_MAX;
+        char base_subsequence[100];
+        char subsequence[100];
+        memset(base_subsequence, 0, sizeof(base_subsequence));
+        move_numpad(base_subsequence, start, input[i]);
+        prepare_permutations(base_subsequence);
+        // print_permutations();
+        for (int j = 0; j < permutations_stored; j++) { // for each subsequence permutation
+            strcpy(subsequence, permutations[j]); // subsequence
+            // Check if this permutation is valid
+            if (subsequence_valid_num(start, subsequence) == 0){
+                // printf("invalid sequence\n");
+                continue;
+            }
+            // printf("Checking permutation %s\n", subsequence);
+            uint64_t subcount = count_min_moves(subsequence, 2);
+            if (subcount < min) {
+                min = subcount;
+                // printf("New minimum found for permutation %s, %li\n", subsequence, min);
+            }
+            prepare_permutations(base_subsequence); // ugly hack, i hate it
+        }
+        moves += min;
         start = input[i];
     }
-    printf("Robot1: %s\n", robot1);
-    // HERE we should check the permutations of the steps before the next A, to choose the one that produces the shortest output
-    // Transform the 1st robots instructions to 2nd robots instructions
-    start = 'A';
-    for (int i = 0; i < strlen(robot1); i++){
-        move_dir(robot2, start, robot1[i]);
-        start = robot1[i];
-    }
-    printf("Robot2: %s\n", robot2);
-    // Transform the 2nd robots instructions to 3rd robots instructions
-    start = 'A';
-    for (int i = 0; i < strlen(robot2); i++){
-        move_dir(robot3, start, robot2[i]);
-        start = robot2[i];
-    }
-    printf("Robot3: %s\n", robot3);
-    strcpy(output, robot3);
+    return moves;
+}
+
+void test_counter(char* str, int layers) {
+    printf("\n\n\n");
+    printf("%s %i: %li\n",str, layers, count_min_moves(str, layers));
 }
 
 int main(int argc, char** argv) {
     char line[LINELEN];
     char str1[LINELEN];
     memset(str1, '\0', LINELEN);
+
+    // printf("TESTS\n");
+    // // test_counter("<A", 1);
+    // // test_counter("<A", 0);
+    // // test_counter("<A", 2);
+    // // test_counter("v<<A", 1);
+    // // test_counter(">>^A", 1);
+    // test_counter("^A^^<<A>>AvvvA", 2);
+    // test_counter("^A<<^^A>>AvvvA", 2);
+    // printf("TESTS END\n");
+    // return 0;
 
     if (argc != 2) {
         printf("Must have 1 arg, the input file name\n");
@@ -177,16 +345,15 @@ int main(int argc, char** argv) {
         return -2;
     }
 
-    int sum = 0;
+    uint64_t sum = 0;
     fgets(line, LINELEN, f);
     while (!feof(f)) {
-        do_all_moves(str1, line);
-        int subsum = strtol(line, NULL, 10) * strlen(str1);
-        printf("%s: %li * %i = %i\n", line, strtol(line, NULL, 10), strlen(str1), subsum);
-        sum += subsum;
+        uint64_t moves = do_all_moves(line);
+        sum += moves * strtol(line, NULL, 10);
+        printf("Moves: %li\n", moves);
         fgets(line, LINELEN, f);
     }
 
-    printf("The total sum is %i\n", sum);
+    printf("The total sum is %lu\n", sum);
     return 0;
 }
