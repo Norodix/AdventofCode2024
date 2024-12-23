@@ -27,4 +27,7 @@ test1: $(BUILDDIR)/part1
 	$(BUILDDIR)/part1 example
 
 test2: $(BUILDDIR)/part2
-	$(BUILDDIR)/part2 example
+	$(BUILDDIR)/part2 example2
+
+test3: $(BUILDDIR)/part2
+	$(BUILDDIR)/part2 example3
