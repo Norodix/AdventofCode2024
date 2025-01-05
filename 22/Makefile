@@ -3,7 +3,7 @@ BUILDDIR = build
 # Create build directory if it doesnt exist
 $(shell mkdir -p $(BUILDDIR))
 
-CFLAGS = -O0 -lm -g
+CFLAGS = -O3 -lm -g -march=native -mavx2
 
 %part1: $(BUILDDIR)/part1.o
 	gcc $^ -o $@ $(CFLAGS)

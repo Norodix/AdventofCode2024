@@ -45,27 +45,6 @@ void get_prices(int initial, int* out) {
     }
 }
 
-int get_score_for_sequence(int* sequence, int** diffs, int** prices, int monkeys) {
-    int sum = 0;
-    for (int m = 0; m < monkeys; m++) {
-        int* monkey_diffs = diffs[m];
-        for (int i = 0; i < NUM_PRICES-4; i++) {
-            // Check if the last 4 matches sequence, if so that is the price
-            int match = memcmp(monkey_diffs + i, sequence, 4 * sizeof(int));
-            if (match == 0) {
-                sum += prices[m][i+4];
-                // printf("%i %i %i %i matches, so the price is %i\n", (monkey_diffs+i)[0],
-                //                                                     (monkey_diffs+i)[1],
-                //                                                     (monkey_diffs+i)[2],
-                //                                                     (monkey_diffs+i)[3],
-                //                                                     prices[m][i+4]);
-                break;
-            }
-        }
-    }
-    return sum;
-}
-
 int get_index(int* sequcence) {
     int a, b, c, d;
     a = (sequcence[0] + 10) * 20 * 20 * 20;
@@ -133,37 +112,50 @@ int main(int argc, char** argv) {
     for (int i = 0; i < rows; i++) {
         // For the i-th monkey
         for (int j = 0; j < NUM_PRICES - 1; j++) {
-            diffs[i][j] = (prices[i][j+1] % 10) - (prices[i][j] % 10);
+            diffs[i][j] = (prices[i][j+1]) - (prices[i][j]);
             // printf("%i\n", diffs[i][j]);
         }
     }
 
 
     int tested[160000];
-    memset(tested, 0, 160000*sizeof(int));
+    int value[160000];
+    memset(tested, 0, sizeof(tested));
+    memset(value, 0, sizeof(value));
     // int sequence[] = {-2, 1, -1, 3};
     // int max_score = get_score_for_sequence(sequence, diffs, prices, rows);
     int max_score = 0;
     for (int m = 0; m < rows; m++) {
-        printf("                    \r");
-        fflush(stdout);
+        int tested_index = m*rows+1;
         for (int d = 0; d < NUM_PRICES - 5; d++) {
-            printf(" %i %i\r", m, d);
-            fflush(stdout);
+            // printf(" %i %i\r", m, d);
+            // fflush(stdout);
             int* sequence = &diffs[m][d];
             int index = get_index(sequence);
             if (index >= 160000){
                 printf("Invalid index\n");
                 exit(-1);
             }
-            if (tested[index]) {
+            // Check if this monkey has already used up this sequence
+            if (tested[index] == tested_index) {
                 continue;
             }
-            max_score = MAX(max_score, get_score_for_sequence(&diffs[m][d], diffs, prices, rows));
-            tested[index] = 1;
+            // The monkey already used up this sequence
+            tested[index] = tested_index;
+            // The value needs to increase by the current amount
+            value[index] += prices[m][d+4];
+            if (value[index] > max_score) max_score = value[index];
+            // max_score = MAX(max_score, get_score_for_sequence(&diffs[m][d], diffs, prices, rows));
         }
+        // memset(tested, 0, sizeof(tested));
     }
     printf("\n");
+
+    // for (int i = 0; i < 160000; i++) {
+    //     if (value[i] > max_score) {
+    //         max_score = value[i];
+    //     }
+    // }
 
     printf("We got %i bananas!\n", max_score);
     return 0;
